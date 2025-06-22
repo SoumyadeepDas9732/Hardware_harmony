@@ -1,0 +1,58 @@
+
+body {
+  font-family: 'Inter', sans-serif; /* A nice default sans-serif font often used with Tailwind */
+}
+
+/* Custom scrollbar for chat (WebKit browsers) */
+.chat-messages-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* Tailwind's slate-300 */
+  border-radius: 10px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* Tailwind's slate-500 */
+}
+
+/* Ensure full height for chat container within its parent */
+.chat-container-full-height {
+  height: calc(100vh - 220px); /* Adjust based on header/footer/padding */
+}
+
+@media (min-width: 768px) { /* md breakpoint */
+  .chat-container-full-height {
+    height: calc(100vh - 200px); /* Adjust for larger screens if header/footer changes */
+  }
+}
+
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+
+/* Basic styling for loading dots */
+.loading-dot {
+  animation: pulse 1.4s infinite ease-in-out both;
+}
+.loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes pulse {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1.0);
+  }
+}

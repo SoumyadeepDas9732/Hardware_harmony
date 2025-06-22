@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hardware Harmony Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.5.1",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/"
+  }
+}
+</script>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+  <header id="app-header" class="bg-gradient-to-r from-sky-600 to-cyan-500 text-white shadow-lg sticky top-0 z-50"></header>
+  <main id="app-main-content" class="flex-grow container mx-auto px-4 py-8">
+    <!-- Page content will be injected here -->
+  </main>
+  <footer id="app-footer" class="bg-slate-800 text-slate-300 py-8 text-center"></footer>
+
+  <script>
+    // Make process.env.API_KEY available if it's set by an external mechanism for browser environments
+    // This is a common pattern for deploying static sites with environment variables.
+    // For local development, you might need to manually set this in your browser's console or a script.
+    // Example: window.process = { env: { API_KEY: "YOUR_ACTUAL_API_KEY" } };
+    // DO NOT HARDCODE THE API KEY HERE IN PRODUCTION.
+    if (typeof window.process === 'undefined') {
+      window.process = { env: {} };
+    }
+    // If your deployment mechanism sets global variables (e.g., from a .env file during build)
+    // and makes them available on `window` or a specific object, adjust accordingly.
+    // For this example, we assume API_KEY might be set on window.APP_CONFIG.API_KEY or similar
+    // For the prompt's requirement: "Assume this variable is pre-configured, valid, and accessible"
+    // we'll primarily rely on it being set as window.process.env.API_KEY
+    // Ensure `process.env.API_KEY` is populated by your hosting environment or a script you run.
+    // For example, if your hosting platform injects env vars into a script tag:
+    // <script>window.process = { env: { API_KEY: "{{YOUR_API_KEY_FROM_HOSTING}}" } };</script>
+    // This script block just ensures `window.process.env` exists. The actual value must be set externally.
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
