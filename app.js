@@ -91,7 +91,7 @@ function renderHomePage() {
       <section class="mb-12">
         <h3 class="text-3xl font-bold text-slate-900 mb-8">Discover Our Range</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          ${CATEGORIES_AVAILABLE.slice(0, 4).map(category => {
+          ${CATEGORIES_AVAILABLE.slice(0, 3).map(category => {
             return `
               <div class="category-promo-card bg-slate-100 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-pointer" data-category-target="${category}">
                 <h4 class="text-xl font-semibold text-blue-800 mb-2">${category}</h4>
