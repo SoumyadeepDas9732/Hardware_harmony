@@ -4,17 +4,13 @@ import {
   Page,
   PRODUCTS_DATA,
   CATEGORIES_AVAILABLE,
-  ProductCategory
 } from './constants.js';
-import { createChatSession, sendMessageToGemini, isApiKeyAvailable } from './geminiService.js';
 
 const mainContent = document.getElementById('app-main-content');
 const headerContainer = document.getElementById('app-header');
 const footerContainer = document.getElementById('app-footer');
 
 let currentPage = Page.HOME;
-let geminiChatSession = null;
-let aiChatMessages = []; // Stores {id, sender, text, timestamp}
 
 // --- Icon Helper ---
 function getIconSVG(name, additionalClasses = "w-5 h-5") {
@@ -120,12 +116,9 @@ function renderHomePage() {
   document.querySelectorAll('.category-promo-card').forEach(card => {
       card.addEventListener('click', (e) => {
           const cat = card.getAttribute('data-category-target');
-          if (cat === "Plumbing Supplies") {
-            renderProductsPage("Plumbing Supplies");
-            e.preventDefault();
-          } else {
-            navigateTo(Page.PRODUCTS);
-          }
+          navigateTo(Page.PRODUCTS);
+          renderProductsPage(cat);
+          e.preventDefault();
       });
   });
   document.getElementById('home-ask-helper').addEventListener('click', () => navigateTo(Page.AI_ASSISTANT));
@@ -201,9 +194,7 @@ function renderContactPage() {
           <div class="mt-6">
             <h4 class="text-xl font-semibold text-indigo-700 mb-2">Visit Us</h4>
             <div class="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden shadow-md">
-               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.200175078502!2d-73.98567968459388!3d40.75806097932688!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855c6452671%3A0x4a7a0b5a45b73696!2sTimes%20Square!5e0!3m2!1sen!2sus!4v1617912037728!5m2!1sen!2sus" 
-                width="100%" height="250" style="border:0;" allowfullscreen="" loading="lazy" title="Shop Location"></iframe>
+               <iframe src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d1064.0122330039667!2d87.58572726961656!3d21.743565998755653!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMjHCsDQ0JzM2LjgiTiA4N8KwMzUnMTAuOSJF!5e1!3m2!1sen!2sin!4v1751095369193!5m2!1sen!2sin" width="100%" height="250" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Shop Location"></iframe>
             </div>
           </div>
         </div>
@@ -238,7 +229,7 @@ function renderContactPage() {
   `;
   document.getElementById('contact-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
+    // const formData = new FormData(e.target);
     const messageDiv = document.getElementById('contact-form-message');
     messageDiv.innerHTML = `
       <div class="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">
@@ -248,197 +239,9 @@ function renderContactPage() {
     setTimeout(() => { messageDiv.innerHTML = ''; }, 5000);
   });
 }
-
-function renderAIAssistantPage() {
-  const apiKeyOk = isApiKeyAvailable();
-  
-  mainContent.innerHTML = `
-    <div class="flex flex-col chat-container-full-height max-w-3xl mx-auto bg-neutral-50 shadow-xl rounded-lg overflow-hidden">
-      <header class="bg-indigo-700 text-white p-4 text-xl font-semibold text-center">
-        Harmony Helper - AI Assistant
-      </header>
-      
-      ${!apiKeyOk ? `
-        <div class="p-4 m-4 bg-rose-50 text-rose-800 border border-rose-200 rounded-lg text-center">
-          AI Assistant is unavailable because the API Key is not configured. Please contact support or ensure <code>process.env.API_KEY</code> is correctly set up in your environment.
-        </div>` : ''
-      }
-      <div id="ai-error-message-area" class="p-4 m-4 ${!apiKeyOk ? 'hidden' : ''}"></div>
-
-      <div id="chat-messages" class="flex-grow p-6 space-y-4 overflow-y-auto chat-messages-container">
-        <!-- Messages will be injected here -->
-      </div>
-
-      ${apiKeyOk ? `
-        <div class="p-4 border-t border-neutral-200 bg-neutral-50">
-          <div class="flex items-center space-x-2">
-            <input
-              type="text" id="ai-chat-input"
-              placeholder="Ask about your project or our products..."
-              class="flex-grow p-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
-              ${!geminiChatSession ? 'disabled' : ''}
-            />
-            <button id="ai-send-button"
-              class="bg-indigo-700 text-white p-3 rounded-lg hover:bg-indigo-800 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
-              aria-label="Send message"
-              ${!geminiChatSession ? 'disabled' : ''}
-            >
-              ${getIconSVG('paper-airplane', "w-6 h-6")}
-            </button>
-          </div>
-        </div>` : ''
-      }
-    </div>
-  `;
-
-  if (apiKeyOk) {
-    initializeAIChat();
-    const inputField = document.getElementById('ai-chat-input');
-    const sendButton = document.getElementById('ai-send-button');
-    if (inputField && sendButton) {
-      inputField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !sendButton.disabled) handleSendChatMessage();
-      });
-      sendButton.addEventListener('click', () => {
-        if (!sendButton.disabled) handleSendChatMessage();
-      });
-    }
-  }
-  renderChatMessages(); // Render any existing messages (e.g. initial greeting)
-}
-
-function initializeAIChat() {
-  if (!isApiKeyAvailable()) {
-      aiChatMessages = [];
-      updateAIChatUIError("AI Assistant is unavailable: API Key is not configured.");
-      return;
-  }
-
-  if (!geminiChatSession) {
-    geminiChatSession = createChatSession();
-  }
-
-  if (geminiChatSession && aiChatMessages.length === 0) {
-    aiChatMessages.push({
-      id: 'initial-ai-message',
-      sender: 'ai',
-      text: "Hello! I'm Harmony Helper, your AI assistant for Hardware Harmony Hub. How can I help you with your home improvement or hardware questions today?",
-      timestamp: new Date()
-    });
-    updateAIChatUIError(null); // Clear previous errors
-  } else if (!geminiChatSession) {
-    updateAIChatUIError("Failed to initialize AI Assistant. Please try refreshing the page.");
-  }
-  renderChatMessages(); // Update UI
-}
-
-function renderChatMessages() {
-  const messagesContainer = document.getElementById('chat-messages');
-  if (!messagesContainer) return;
-
-  messagesContainer.innerHTML = aiChatMessages.map(msg => `
-    <div class="flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}">
-      <div class="max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 rounded-xl shadow
-        ${msg.sender === 'user' ? 'bg-indigo-700 text-white' : 'bg-neutral-200 text-neutral-800'}">
-        <p class="whitespace-pre-wrap">${msg.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p> <!-- Basic XSS protection -->
-        <p class="text-xs mt-1 ${msg.sender === 'user' ? 'text-indigo-100 text-right' : 'text-neutral-500 text-left'}">
-          ${msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </p>
-      </div>
-    </div>
-  `).join('');
-  
-  // Add loading indicator if needed
-  const isLoading = document.body.classList.contains('ai-loading');
-  if (isLoading) {
-      messagesContainer.innerHTML += `
-        <div class="flex justify-start" id="ai-loading-indicator">
-          <div class="px-4 py-3 rounded-xl shadow bg-neutral-200 text-neutral-800">
-            <div class="flex items-center space-x-2">
-              <div class="w-2 h-2 bg-neutral-500 rounded-full loading-dot"></div>
-              <div class="w-2 h-2 bg-neutral-500 rounded-full loading-dot"></div>
-              <div class="w-2 h-2 bg-neutral-500 rounded-full loading-dot"></div>
-              <span class="text-sm">Harmony Helper is thinking...</span>
-            </div>
-          </div>
-        </div>`;
-  }
-
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-function updateAIChatUIError(errorMessage) {
-    const errorArea = document.getElementById('ai-error-message-area');
-    if (!errorArea) return;
-
-    if (errorMessage) {
-        errorArea.innerHTML = `
-            <div class="bg-rose-50 text-rose-800 border border-rose-200 rounded-lg text-center p-3">
-                ${errorMessage}
-            </div>`;
-        errorArea.classList.remove('hidden');
-    } else {
-        errorArea.innerHTML = '';
-    }
-}
-
-async function handleSendChatMessage() {
-  const inputField = document.getElementById('ai-chat-input');
-  const sendButton = document.getElementById('ai-send-button');
-  if (!inputField || !sendButton || !geminiChatSession) return;
-
-  const text = inputField.value.trim();
-  if (!text) return;
-
-  const userMessage = {
-    id: `user-${Date.now()}`,
-    sender: 'user',
-    text: text,
-    timestamp: new Date(),
-  };
-  aiChatMessages.push(userMessage);
-  inputField.value = '';
-  
-  sendButton.disabled = true;
-  inputField.disabled = true;
-  document.body.classList.add('ai-loading');
-  updateAIChatUIError(null); // Clear previous errors
-  renderChatMessages();
-
-  try {
-    const aiResponseText = await sendMessageToGemini(geminiChatSession, userMessage.text);
-    const aiMessage = {
-      id: `ai-${Date.now()}`,
-      sender: 'ai',
-      text: aiResponseText,
-      timestamp: new Date(),
-    };
-    aiChatMessages.push(aiMessage);
-  } catch (e) {
-    console.error("Error in handleSendChatMessage:", e);
-    const errorMessageText = e.message || "An unexpected error occurred while contacting AI.";
-    updateAIChatUIError(`Failed to get response from AI: ${errorMessageText}`);
-    aiChatMessages.push({
-      id: `ai-error-${Date.now()}`,
-      sender: 'ai',
-      text: `I'm sorry, I encountered a problem. ${errorMessageText}. Please try again.`,
-      timestamp: new Date(),
-    });
-  } finally {
-    sendButton.disabled = false;
-    inputField.disabled = false;
-    document.body.classList.remove('ai-loading');
-    renderChatMessages();
-    inputField.focus();
-  }
-}
-
 // --- Navigation ---
 function navigateTo(pageId) {
   currentPage = pageId;
-  aiChatMessages = []; // Clear chat messages when navigating away from AI page or to it initially.
-  geminiChatSession = null; // Reset chat session
-
   renderHeader(); // Re-render header to update active button
 
   switch (pageId) {
